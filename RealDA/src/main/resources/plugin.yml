@@ -1,0 +1,18 @@
+name: DialogAuth
+author: MiFo
+version: '1.2'
+main: fun.vespera.dialogAuth.DialogAuth
+api-version: '1.21'
+commands:
+  changepassword:
+    description: Change your password
+    aliases: [changepass]
+  forceunreg:
+    description: Delete a player registration
+    permission: dialogauth.admin
+  forcechangepass:
+    description: Change a player password forcefully
+    permission: dialogauth.admin
+  dauth:
+    description: Plugin management command
+    permission: dialogauth.admin

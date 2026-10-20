@@ -1,0 +1,39 @@
+﻿{
+    "game_versions":  [
+                          "1.7.2"
+                      ],
+    "loaders":  [
+                    "velocity"
+                ],
+    "environment":  "unknown",
+    "id":  "zOTyppCs",
+    "project_id":  "TZOteSf2",
+    "author_id":  "yWfkUK00",
+    "featured":  false,
+    "name":  "Dev-build bfef579",
+    "version_number":  "bfef579",
+    "changelog":  "Minecraft 26.3 support\n\nFixes https://github.com/Elytrium/LimboAPI/issues/278",
+    "changelog_url":  null,
+    "date_published":  "2026-09-16T18:44:43.972947Z",
+    "downloads":  1865,
+    "version_type":  "beta",
+    "status":  "listed",
+    "requested_status":  null,
+    "files":  [
+                  {
+                      "id":  "ImpGBfZ4",
+                      "hashes":  {
+                                     "sha512":  "b78ae1a9b87716bace7ccadc5ebe555f7a8b7ef18fed6f549cfac3a1f784e6bfe1760637283e0f4a6808dfd0488dd68311fc2672b7039367668c3217a92f038d",
+                                     "sha1":  "790edeeb7af95679ccb68ef7c718ccf75f4234d6"
+                                 },
+                      "url":  "https://cdn.modrinth.com/data/TZOteSf2/versions/zOTyppCs/limboapi-1.1.27-SNAPSHOT.jar",
+                      "filename":  "limboapi-1.1.27-SNAPSHOT.jar",
+                      "primary":  true,
+                      "size":  3339167,
+                      "file_type":  null
+                  }
+              ],
+    "dependencies":  [
+
+                     ]
+}

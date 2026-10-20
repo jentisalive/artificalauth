@@ -1,0 +1,190 @@
+# ArtificalAuth 0.1.2-beta — 17.10.2026
+# Только Velocity + LimboAPI. Paper-сервер авторизации не требуется.
+# Перед включением заполните token и username. Токен можно передать через ARTIFICAL_AUTH_BOT_TOKEN.
+# При enabled: false плагин ЗАКРЫВАЕТ вход, чтобы не допустить обход авторизации.
+enabled: false
+
+bot:
+  # Менять адрес API нужно только для своего Bot API server или локальных тестов.
+  api-base-url: "https://api.telegram.org"
+  token: ""
+  token-env: "ARTIFICAL_AUTH_BOT_TOKEN"
+  username: "CHANGE_ME_BOT"
+  # Команды без /. Один токен должен обслуживаться только одним экземпляром бота.
+  commands:
+    start: "start"
+    menu: "menu"
+    kick: "kick"
+    recover: "recover"
+    unlink: "unlink"
+    twofactor: "twofactor"
+
+routing:
+  target-server: "main"
+
+limbo:
+  name: "ArtificalSMP Auth"
+
+security:
+  default-two-factor: true
+  # Включена: Telegram при новом IP / истечении сессии. Выключена: только пароль.
+  # На единственном сохранённом IP в пределах сессии — автоматический вход.
+  session-hours: 5
+  auth-timeout-seconds: 180
+  action-ttl-seconds: 180
+  code-length: 10
+  password-length: 8
+  # Генератор гарантирует хотя бы одну букву и один символ.
+  password-alphabet: "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*+-_?"
+  pbkdf2-iterations: 600000
+  max-password-attempts: 5
+  max-ip-failures: 15
+  password-delay-ms: 1200
+  ip-lock-seconds: 300
+  telegram-delay-ms: 1000
+
+commands:
+  # /auth открывает окно входа. Ввод пароля через команду намеренно не используется.
+  login: "auth"
+  # Только консоль Velocity: authadmin unlock <ник>.
+  # Это снимает блокировку отвязанного ника и разрешает НОВУЮ привязку.
+  admin: "authadmin"
+  unlock-subcommand: "unlock"
+  reload-subcommand: "reload" # added | 17.10.2026 | ArtificalAuth 0.1.2
+
+actions:
+  kick:
+    enabled: true
+  recover:
+    enabled: true
+  unlink:
+    enabled: true
+  twofactor:
+    enabled: true
+
+dialog:
+  telegram-link: true
+  body-width: 340
+  input-width: 240
+  button-width: 220
+
+# Minecraft: MiniMessage. Telegram: HTML.
+# Динамические значения Telegram экранируются, пароль можно копировать из блока <code>.
+# Политики «один Telegram — один активный аккаунт», «один сохранённый IP»,
+# одноразовые подтверждения и блокировка отвязанного ника являются обязательными.
+messages:
+  dialog-title: "<gradient:#474747:#797979><bold>ArtificalSMP</bold></gradient> <dark_gray>┃</dark_gray> <white>AUTH</white>"
+  dialog-register: |-
+    <white>Добро пожаловать, {player}!</white>
+
+    <gray>Открой Telegram-бота <white>@{bot}</white>
+    и отправь ему этот код:</gray>
+
+    <white><bold>{code}</bold></white>
+
+    <gray>Бот привяжет твой аккаунт и выдаст пароль.
+    После привязки ты автоматически войдёшь на сервер.
+    Никому не передавай код.</gray>
+  dialog-telegram: |-
+    <white>Подтверди вход в Telegram</white>
+
+    <gray>Мы отправили запрос в <white>@{bot}</white>.
+    Нажми «Разрешить вход», чтобы продолжить.</gray>
+
+    <dark_gray>Ник: {player}
+    IP: {ip}
+    Осталось: {seconds} сек.</dark_gray>
+  dialog-password: |-
+    <white>С возвращением, {player}!</white>
+
+    <gray>Подтверждение через Telegram выключено.
+    Введи пароль, который выдал бот.</gray>
+
+    <dark_gray>Забыл пароль? Восстанови его в @{bot}.</dark_gray>
+  password-label: "<gray>Пароль</gray>"
+  dialog-submit: "<green>Войти</green>"
+  dialog-open-bot: "<white>Открыть Telegram</white>"
+  dialog-refresh: "<gray>Обновить окно</gray>"
+  dialog-exit: "<red>Выйти</red>"
+  wrong-password: "<red>Неверный пароль. Попробуй ещё раз.</red>"
+  unavailable: "<gray>ArtificalSMP</gray>\n\n<white>Авторизация временно недоступна.</white>\n<gray>Попробуй подключиться позже.</gray>"
+  busy: "<gray>ArtificalSMP</gray>\n\n<white>Сервис входа занят. Попробуй ещё раз чуть позже.</white>"
+  already-online: "<gray>ArtificalSMP</gray>\n\n<white>Этот аккаунт уже подключён.</white>"
+  contact-admin: "<gray>ArtificalSMP</gray>\n\n<white>Аккаунт отвязан и заблокирован.</white>\n<gray>Обратитесь к администрации.</gray>"
+  recover-required: "<gray>ArtificalSMP</gray>\n\n<white>Пароль не был доставлен.</white>\n<gray>Используй восстановление в Telegram-боте.</gray>"
+  too-many-attempts: "<gray>ArtificalSMP</gray>\n\n<red>Слишком много попыток входа.</red>\n<gray>Подожди несколько минут.</gray>"
+  timeout: "<gray>ArtificalSMP</gray>\n\n<white>Время на авторизацию истекло.</white>\n<gray>Подключись снова.</gray>"
+  denied: "<gray>ArtificalSMP</gray>\n\n<red>Вход не подтверждён.</red>\n<gray>Запрос отклонён в Telegram.</gray>"
+  bot-unavailable: "<gray>ArtificalSMP</gray>\n\n<white>Не удалось отправить запрос в Telegram.</white>\n<gray>Открой бота и попробуй подключиться снова.</gray>"
+  remote-kick: "<gray>ArtificalSMP</gray>\n\n<white>Сеанс завершён владельцем аккаунта через Telegram.</white>"
+  password-reset: "<gray>ArtificalSMP</gray>\n\n<white>Пароль восстановлен через Telegram.</white>\n<gray>Подключись снова.</gray>"
+  settings-changed: "<gray>ArtificalSMP</gray>\n\n<white>Настройки входа изменены. Подключись снова.</white>"
+  cancelled: "<gray>ArtificalSMP</gray>\n\n<white>Вход отменён.</white>"
+  unsupported-version: "<gray>ArtificalSMP</gray>\n\n<white>Клиент не поддерживает окно авторизации.</white>\n<gray>Используй Minecraft Java 1.21.11.</gray>"
+  invalid-response: "<gray>ArtificalSMP</gray>\n\n<white>Некорректный ответ на окно входа.</white>\n<gray>Подключись снова.</gray>"
+  admin-usage: "<gray>Команды: {command} {unlock} <ник> / {command} {reload}</gray>"
+  admin-reloaded: "<green>Конфиг ArtificalAuth перезагружен.</green>"
+  admin-reload-failed: "<red>Конфиг не применён. Сохранены предыдущие настройки; проверь консоль.</red>"
+  admin-unlocked: "<green>Блокировка ника снята. Новая привязка разрешена.</green>"
+  no-ip: "ещё не сохранён"
+  state-on: "включено"
+  state-off: "выключено"
+
+  bot-description-start: "Привязать аккаунт"
+  bot-description-menu: "Управление аккаунтом"
+  bot-description-kick: "Завершить игровой сеанс"
+  bot-description-recover: "Получить новый пароль"
+  bot-description-unlink: "Отвязать и заблокировать ник"
+  bot-description-twofactor: "Настроить подтверждение входа"
+  bot-not-linked: "Зайди на ArtificalSMP и отправь сюда код из окна авторизации. Один Telegram можно привязать к одному игровому аккаунту."
+  bot-already-linked: "К этому Telegram уже привязан игровой аккаунт. Открой меню управления."
+  bot-invalid-code: "Код неверный или уже истёк. Подключись к серверу и используй текущий код."
+  bot-linked: |-
+    <b>ArtificalSMP — аккаунт привязан</b>
+
+    Ник: <b>{player}</b>
+    Твой пароль: <code>{password}</code>
+
+    Нажми на пароль, чтобы скопировать его.
+    Сохрани его и никому не передавай.
+    Вход на сервер разрешён.
+  bot-menu: |-
+    <b>ArtificalSMP — управление аккаунтом</b>
+
+    Ник: <b>{player}</b>
+    Подтверждение входа через Telegram: <b>{twofactor}</b>
+
+    Выбери действие:
+  bot-approval: |-
+    <b>Запрос на вход в ArtificalSMP</b>
+
+    Ник: <b>{player}</b>
+    IP входа: <code>{ip}</code>
+    Сохранённый IP: <code>{old-ip}</code>
+
+    Разрешить вход? Если это не ты, нажми «Отклонить».
+    После подтверждения IP входа станет единственным сохранённым адресом.
+  bot-confirm-recover: "Сгенерировать новый пароль для <b>{player}</b> и завершить текущий игровой сеанс?"
+  bot-confirm-unlink: |-
+    <b>Отвязать аккаунт {player}?</b>
+
+    Ник будет заблокирован для входа с любого IP.
+    Разблокировать его сможет только администрация.
+    Ты также будешь отключён от сервера.
+  bot-confirm-twofactor: "Изменить настройку подтверждения входа? При выключенном подтверждении вход с нового IP или после 5 часов будет доступен только по паролю."
+  bot-recovered: "<b>Пароль восстановлен</b>\n\nНик: <b>{player}</b>\nНовый пароль: <code>{password}</code>\n\nТекущий сеанс завершён. Старый пароль больше не действует."
+  bot-kicked: "Игровой сеанс аккаунта <b>{player}</b> завершён."
+  bot-contact-admin: "Аккаунт отвязан и заблокирован. Обратитесь к администрации."
+  bot-approved: "Вход для <b>{player}</b> разрешён. Сохранённый IP: <code>{ip}</code>."
+  bot-denied: "Вход отклонён. Подключение завершено."
+  bot-disabled: "Это действие отключено администрацией."
+  bot-expired: "Запрос устарел или уже обработан. Открой меню заново."
+  bot-accepted: "Запрос принят"
+  button-kick: "Кик с сервера"
+  button-recover: "Восстановить пароль"
+  button-unlink: "Отвязать аккаунт"
+  button-twofactor: "Подтверждение входа"
+  button-approve: "Разрешить вход"
+  button-deny: "Отклонить"
+  button-confirm: "Да, подтверждаю"
+  button-cancel: "Отмена"

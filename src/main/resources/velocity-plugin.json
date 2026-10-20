@@ -1,0 +1,16 @@
+{
+  "id": "artificalauth",
+  "name": "ArtificalAuth",
+  "version": "0.1.3-beta",
+  "description": "Telegram authorization and native dialogs, entirely on Velocity",
+  "authors": [
+    "ArtificalSMP"
+  ],
+  "dependencies": [
+    {
+      "id": "limboapi",
+      "optional": false
+    }
+  ],
+  "main": "ru.artificalsmp.auth.ArtificalAuth"
+}

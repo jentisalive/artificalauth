@@ -1,0 +1,40 @@
+# Generated files and local development state
+**/build/
+**/target/
+**/.idea/
+**/.vscode/
+*.iml
+**/dependency-reduced-pom.xml
+**/__pycache__/
+*.pyc
+
+# Runtime servers, credentials, databases and logs
+/test-velocity/
+/logs/
+**/logs/
+**/.console_history
+**/accounts.json
+**/accounts.json.*
+**/accounts.tmp
+**/accounts.lock
+**/forwarding.secret
+**/key.pem
+**/*.log
+**/*.log.gz
+**/*.hprof
+**/*.db
+**/*.mv.db
+**/*.lock
+**/.env
+**/.env.*
+
+# Live deployment snapshots, never source templates
+**/live-config-and-accounts/
+**/installed-config-and-accounts/
+/backups/**/config.yml
+/backups/**/config-before-install.yml
+/backups/**/config-updated.yml
+!/backups/**/src/main/resources/config.yml
+!/backups/**/dist/config.yml
+
+# Plugin binaries under dist/, lib/ and historical backups are intentionally tracked.

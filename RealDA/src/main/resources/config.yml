@@ -1,0 +1,106 @@
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
+#               DialogAuth config                 #
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
+
+database:
+  # Supported types: h2, mysql, postgresql
+  # When using 'h2', the database will be created locally in the plugin folder (as a file).
+  # For H2, host, port, username, and password settings are ignored.
+  type: "h2"
+  host: "127.0.0.1"
+  port: 3306 # For PostgreSQL, usually 5432 is used
+  database: "DialogAuth"
+  username: "root"
+  password: ""
+
+api:
+  # Enable/disable web server.
+  # Set to false if you are not using the Velocity addon for license checks.
+  enabled: true
+
+  # The hostname & port Paper will listen on for requests from Velocity.
+  host: "0.0.0.0"
+  port: 8080
+
+  # auth token for security
+  # copy this token and place in velocity plugin config.yml file
+  token: ""
+
+
+
+# Player session settings
+session:
+  # Time in minutes (session persistence from the same IP for automatic login)
+  duration_minutes: 60
+
+  # Time in seconds given to the player to enter the password in the dialog window
+  timeout_seconds: 60
+
+  # Domains through which auto-login (sessions) will NOT work.
+  disabled_domains:
+    - "for.example.com"
+
+# Security and protection settings
+security:
+  # Minimum allowed player password length (used for registration and change)
+  min_length: 6
+
+  # BCrypt hashing cost (default 10, 10 to 12 recommended)
+  bcrypt_rounds: 10
+
+  # Maximum number of failed attempts before IP ban
+  max_attempts: 3
+
+  # Duration of temporary IP ban (in minutes)
+  ban_minutes: 15
+
+  # Domains for which the IP ban system for incorrect password entry is disabled.
+  no_ban_domains:
+    - "for.example.com"
+
+# Plugin messages and visual interface settings (MiniMessage format)
+messages:
+  login_title: "<bold><gradient:#7b2cbf:#9d4edd>Login</gradient></bold>"
+  login_body: "Welcome back! Please enter your password to join the server."
+
+  register_title: "<bold><gradient:#06d6a0:#118ab2>Registration</gradient></bold>"
+  register_body: "Welcome! Create a strong password to protect your account."
+
+  # Labels and buttons for Dialog Windows
+  pass_label: "Password"
+  confirmpass_label: "Confirm Password"
+
+  registerbutton_label: "Register"
+  loginbutton_label: "Login"
+  changepassbutton_label: "Submit"
+
+  #buttons width, for example 200 is like text inputs
+  registerbutton_width: 200
+  loginbutton_width: 200
+  changepassbutton_width: 200
+
+  # Change password dialog (for players)
+  changepass_title: "<bold><gradient:#fca311:#e5e5e5>Change Password</gradient></bold>"
+  changepass_body: "Fill out the form below to update your account password."
+  changepass_old_label: "Current Password"
+  changepass_new_label: "New Password"
+
+  # Error & Status messages
+  timeout: "<red>Authentication timed out! Please reconnect and try again faster."
+  ip_banned: "<red>Your IP is temporarily banned due to too many failed login attempts. Try again later."
+  missing_password: "<red>You didn't fill in all password fields. Operation cancelled."
+  mismatch_password: "<red>Passwords do not match! Please try again."
+  wrong_password: "<red>Incorrect password!"
+  password_too_short: "<red>Password is too short! Minimum length: <yellow>{min}</yellow> characters."
+  password_changed: "<green>Your password has been successfully updated!"
+  player_not_found: "<red>Player not found in the database."
+  no_permission: "<red>You don't have permission to use this command."
+  config_reloaded: "<green>Plugin configuration reloaded successfully!"
+
+  # Command Usages & Admin Actions
+  reload_usage: "<red>Usage: /dauth reload"
+  forceunreg_usage: "<red>Usage: /forceunreg <player>"
+  forcechangepass_usage: "<red>Usage: /forcechangepass <player> <new_password>"
+
+  force_unregistered: "<green>Player <yellow>{player}</yellow>'s account has been successfully deleted."
+  force_password_changed: "<green>Player <yellow>{player}</yellow>'s password has been forcefully changed."

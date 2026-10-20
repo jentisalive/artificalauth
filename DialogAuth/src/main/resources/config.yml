@@ -1,0 +1,24 @@
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
+#           DialogAuth-Velocity addon             #
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
+
+
+# Paper plugin API connection settings
+# Host and port must match those specified in the Paper plugin
+api:
+  host: "0.0.0.0"
+  port: 8080
+  # make sure tokens match with Paper`s config.yml
+  token: ""
+
+
+# Plugin messages
+# MiniMessage supported, you can use tags like <green>, <#rrggbb>, or even <gradient:#rrggbb:#rrggbb>
+messages:
+  license_warning: "<yellow>Are you sure you want to link your license? Enter <gold>/license confirm</gold> to verify."
+  checking_license: "<yellow>Checking license..."
+
+  license_confirmed: "<green>License successfully verified! <yellow>Please reconnect to the server for changes to take effect."
+  no_license_found: "<red>Сouldn't find a Minecraft license account with this nickname!"
+
+  license_api_error: "<red>Internal error: Failed to contact the game server to save status. Please contact administration."
