@@ -1,8 +1,8 @@
 {
   "id": "artificalauth",
   "name": "ArtificalAuth",
-  "version": "0.1.3-beta",
-  "description": "Telegram authorization and native dialogs, entirely on Velocity",
+  "version": "0.1.4-beta",
+  "description": "Telegram authorization, Java dialogs and native Bedrock forms on Velocity",
   "authors": [
     "ArtificalSMP"
   ],
@@ -10,6 +10,14 @@
     {
       "id": "limboapi",
       "optional": false
+    },
+    {
+      "id": "geyser",
+      "optional": true
+    },
+    {
+      "id": "floodgate",
+      "optional": true
     }
   ],
   "main": "ru.artificalsmp.auth.ArtificalAuth"

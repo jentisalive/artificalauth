@@ -1,5 +1,5 @@
 from pathlib import Path
-import json,threading,http.server,time,socket,struct,zlib,uuid,subprocess,shutil,re
+import json,threading,http.server,time,socket,struct,zlib,uuid,subprocess,shutil,re,argparse,os
 ROOT=Path(__file__).resolve().parents[1]; BASE=ROOT/'test-velocity'; TEST=BASE/('run-'+uuid.uuid4().hex[:8])
 sent=[];updates=[];guard=threading.Lock()
 class API(http.server.BaseHTTPRequestHandler):
@@ -96,15 +96,21 @@ class Client:
   # Packet diagnostics intentionally omit code/password values.
   return pid
 def main():
+ parser=argparse.ArgumentParser();parser.add_argument('--with-geyser',action='store_true');options=parser.parse_args()
  TEST.mkdir(parents=True);shutil.copy2(BASE/'server.jar',TEST/'server.jar');shutil.copy2(BASE/'velocity.toml',TEST/'velocity.toml')
  test_toml=TEST/'velocity.toml'
  test_toml.write_text(test_toml.read_text(encoding='utf-8').replace('login-ratelimit = 3000','login-ratelimit = 0'),encoding='utf-8')
  cfg=(ROOT/'src/main/resources/config.yml').read_text(encoding='utf-8').replace('\nenabled: false','\nenabled: true',1).replace('token: ""','token: "LOCAL_TEST_TOKEN"').replace('username: "CHANGE_ME_BOT"','username: "ArtificalTestBot"').replace('api-base-url: "https://api.telegram.org"','api-base-url: "http://127.0.0.1:18081"').replace('telegram-delay-ms: 1000','telegram-delay-ms: 0')
  plugin=TEST/'plugins/artificalauth';plugin.mkdir(parents=True,exist_ok=True);(plugin/'config.yml').write_text(cfg,encoding='utf-8')
- for name in ['ArtificalAuth-0.1.3-beta.jar','limboapi-1.1.27-SNAPSHOT.jar']:shutil.copy2(ROOT/'dist'/name,TEST/'plugins'/name)
+ for name in ['ArtificalAuth-0.1.4-beta.jar','limboapi-1.1.27-SNAPSHOT.jar']:shutil.copy2(ROOT/'dist'/name,TEST/'plugins'/name)
+ if options.with_geyser:
+  for name in ['Geyser-Velocity.jar','floodgate-velocity.jar']:shutil.copy2(ROOT.parent/'Velocity/plugins'/name,TEST/'plugins'/name)
+  geyser=TEST/'plugins/Geyser-Velocity';geyser.mkdir()
+  # Fresh local-only listener; no production keys, credentials or server ports are reused.
+  (geyser/'config.yml').write_text('bedrock:\n  address: 127.0.0.1\n  port: 19136\njava:\n  auth-type: floodgate\n',encoding='utf-8')
  api=http.server.ThreadingHTTPServer(('127.0.0.1',18081),API);threading.Thread(target=api.serve_forever,daemon=True).start()
  log=open(TEST/'integration-console.log','w',encoding='utf-8')
- proc=subprocess.Popen([r'Z:\PrismLauncher\java\java-runtime-epsilon\bin\java.exe','-Dfile.encoding=UTF-8','-Dstdout.encoding=UTF-8','-Dstderr.encoding=UTF-8','-Xms128M','-Xmx768M','-jar','server.jar'],cwd=TEST,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW)
+ proc=subprocess.Popen([r'Z:\PrismLauncher\java\java-runtime-epsilon\bin\java.exe','-Dfile.encoding=UTF-8','-Dstdout.encoding=UTF-8','-Dstderr.encoding=UTF-8','-Xms128M','-Xmx768M','-jar','server.jar'],cwd=TEST,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW,env={**os.environ,'ARTIFICAL_AUTH_BOT_TOKEN':'LOCAL_TEST_TOKEN'})
  try:
   deadline=time.monotonic()+35
   while time.monotonic()<deadline:
@@ -225,7 +231,7 @@ def main():
   data=(TEST/'integration-console.log').read_text(encoding='utf-8',errors='replace')
   assert data.count('unable to connect to server main')>before,'Password reply did not authorize transfer'
   second.s.close()
-  print('PASS: real Java 1.21.11 registration and password dialogs; local Telegram binding/settings; native password response; Refresh/Exit buttons; real framed password; URL-cancel policy; reload and failed reload rollback; transfer out of Limbo.',flush=True)
+  print('PASS: ArtificalAuth 0.1.4-beta; Java 1.21.11 registration and password dialogs; local Telegram binding/settings; native password response; Refresh/Exit buttons; real framed password; URL-cancel policy; reload and failed reload rollback; transfer out of Limbo; Geyser installed='+str(options.with_geyser)+'.',flush=True)
  finally:
   try:proc.stdin.write(b'end\n');proc.stdin.flush();proc.wait(timeout=20)
   except Exception:proc.terminate();proc.wait(timeout=5)

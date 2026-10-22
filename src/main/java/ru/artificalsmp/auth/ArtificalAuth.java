@@ -22,8 +22,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.time.Duration;
 
-@Plugin(id="artificalauth",name="ArtificalAuth",version="0.1.3-beta",authors={"ArtificalSMP"},
-    dependencies={@Dependency(id="limboapi")})
+@Plugin(id="artificalauth",name="ArtificalAuth",version="0.1.4-beta",authors={"ArtificalSMP"},
+    dependencies={@Dependency(id="limboapi"),@Dependency(id="geyser",optional=true),@Dependency(id="floodgate",optional=true)})
 public final class ArtificalAuth {
     private final ProxyServer proxy;private final Logger log;private final Path dir;
     private final ThreadPoolExecutor worker=new ThreadPoolExecutor(1,1,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(256),
@@ -31,6 +31,7 @@ public final class ArtificalAuth {
     private final Map<UUID,Client> clients=new ConcurrentHashMap<>();
     private String registeredLogin,registeredAdmin;
     private Config config;private Store store;private Telegram bot;private Engine engine;private Dialogs dialogs;
+    private BedrockUi bedrock=BedrockUi.NONE;
     private Limbo limbo;private volatile boolean ready;private volatile boolean stopping;
     @Inject public ArtificalAuth(ProxyServer proxy,Logger log,@DataDirectory Path dir){this.proxy=proxy;this.log=log;this.dir=dir;}
     @Subscribe public void initialize(ProxyInitializeEvent e){
@@ -45,6 +46,17 @@ public final class ArtificalAuth {
             if(proxy.getServer(config.s("routing.target-server")).isEmpty())throw new IllegalStateException("Target server is not registered");
             bot=new Telegram(config,update->worker.execute(()->safe(()->update(update),null)),log::warn);
             engine=new Engine(config,store,bot,System::currentTimeMillis);
+            if(proxy.getPluginManager().isLoaded("geyser")){
+                bedrock=new BedrockForms(config,new GeyserForms(proxy.getPluginManager().isLoaded("floodgate")),new BedrockForms.Dispatcher(){
+                    public void enqueue(Engine.Client client,Runnable task){submit(task::run,(Client)client);}
+                    public void later(Runnable task,int delay){
+                        if(!stopping)proxy.getScheduler().buildTask(ArtificalAuth.this,task).delay(Duration.ofMillis(delay)).schedule();
+                    }
+                    public void reply(Engine.Client client,BedrockUi.Reply reply){safe(()->bedrockReply((Client)client,reply),(Client)client);}
+                    public boolean active(Engine.Client client,String nonce,String screen){return engine.acceptsReply(client,nonce,screen);}
+                });
+                log.info("Нативные Bedrock-формы доступны через Geyser на Velocity.");
+            }
             registerCommands();
             proxy.getScheduler().buildTask(this,()->submit(()->engine.tick(),null)).repeat(Duration.ofSeconds(1)).schedule();
             if(!config.b("enabled")||config.token().isBlank()){
@@ -64,7 +76,7 @@ public final class ArtificalAuth {
         proxy.getCommandManager().register(proxy.getCommandManager().metaBuilder(config.s("commands.login")).plugin(this).build(),new SimpleCommand(){
             public void execute(Invocation i){
                 if(!(i.source() instanceof Player p))return;Client cl=clients.get(p.getUniqueId());
-                if(cl!=null)submit(()->engine.refresh(cl),cl);
+                if(cl!=null)refresh(cl);
             }
         });
         proxy.getCommandManager().register(proxy.getCommandManager().metaBuilder(config.s("commands.admin")).plugin(this).build(),new SimpleCommand(){
@@ -127,12 +139,32 @@ public final class ArtificalAuth {
             Client cl=clients.get(p.getUniqueId());
             if(cl==null||engine==null||!engine.allowed(cl)){
                 e.setResult(CommandExecuteEvent.CommandResult.denied());
-                if(cl!=null&&e.getCommand().equalsIgnoreCase(config.s("commands.login")))submit(()->engine.refresh(cl),cl);
+                if(cl!=null&&e.getCommand().equalsIgnoreCase(config.s("commands.login")))refresh(cl);
             }
         }
     }
     @Subscribe public void disconnect(DisconnectEvent e){
-        Client cl=clients.remove(e.getPlayer().getUniqueId());if(cl!=null&&engine!=null)submit(()->engine.disconnect(cl),null);
+        Client cl=clients.remove(e.getPlayer().getUniqueId());
+        if(cl!=null&&engine!=null)submit(()->{bedrock.close(cl);engine.disconnect(cl);},null);
+    }
+    private void refresh(Client cl){
+        submit(()->{
+            long now=System.currentTimeMillis();
+            if(now<cl.nextRefresh)return;cl.nextRefresh=now+750;
+            engine.refresh(cl);
+        },cl);
+    }
+    private void bedrockReply(Client cl,BedrockUi.Reply reply) throws Exception {
+        if(!cl.nativeBedrock||!engine.acceptsReply(cl,reply.nonce(),reply.screen()))return;
+        Engine.Session s=engine.session(cl);
+        switch(reply.action()){
+            case "password"->engine.password(cl,s.nonce,reply.password());
+            case "refresh"->refresh(cl);
+            case "exit"->cl.kick(config.s("messages.cancelled"));
+            case "closed"->cl.player.sendMessage(mm(config.text("bedrock-form-closed",Map.of("login-command",config.s("commands.login")))));
+            case "invalid"->cl.kick(config.s("messages.invalid-response"));
+            case "unavailable"->cl.kick(config.s("messages.bedrock-form-unavailable"));
+        }
     }
     private void update(JsonObject update) throws Exception {
         if(update.has("message")){
@@ -171,11 +203,13 @@ public final class ArtificalAuth {
         worker.shutdown();
         try{if(!worker.awaitTermination(20,TimeUnit.SECONDS))worker.shutdownNow();}catch(InterruptedException x){Thread.currentThread().interrupt();}
         if(engine!=null)engine.shutdown();
+        bedrock.closeAll();
         try{if(store!=null)store.close();}catch(Exception ignored){}
         if(limbo!=null)limbo.dispose();
     }
     final class Client implements Engine.Client,LimboSessionHandler {
-        final Player player;volatile LimboPlayer lp;volatile long nextPacket;
+        final Player player;volatile LimboPlayer lp;volatile long nextPacket;volatile boolean nativeBedrock;
+        long nextRefresh;
         Client(Player p){player=p;}
         public UUID id(){return player.getUniqueId();}
         public String name(){return player.getUsername();}
@@ -183,24 +217,29 @@ public final class ArtificalAuth {
         public boolean connected(){return player.isActive();}
         public void onSpawn(Limbo server,LimboPlayer p){
             lp=p;p.disableFalling();
-            if(player.getProtocolVersion().getProtocol()!=774){kick(config.s("messages.unsupported-version"));return;}
-            submit(()->engine.begin(this),this);
+            submit(()->{
+                nativeBedrock=config.b("bedrock.enabled")&&bedrock.isBedrock(id());
+                if(!nativeBedrock&&player.getProtocolVersion().getProtocol()!=774){kick(config.s("messages.unsupported-version"));return;}
+                engine.begin(this);
+            },this);
         }
         public void show(String screen,Map<String,String> vars){
+            if(nativeBedrock){bedrock.show(this,screen,vars);return;}
             LimboPlayer current=lp;
             if(current==null)return;
             current.getScheduledExecutor().execute(()->{
-                if(!connected())return;
+                if(!connected()||!engine.acceptsReply(this,vars.get("nonce"),screen))return;
                 try{current.writePacketAndFlush(dialogs.packet(screen,vars,player.getProtocolVersion()));}
                 catch(Exception e){log.warn("Не удалось отправить диалог: {}",e.getClass().getSimpleName());kick(config.s("messages.unsupported-version"));}
             });
         }
-        public void kick(String message){player.disconnect(mm(message));}
+        public void kick(String message){bedrock.close(this);player.disconnect(mm(message));}
         public void allow(){
+            if(nativeBedrock)bedrock.close(this);
             LimboPlayer current=lp;
             if(current!=null)current.getScheduledExecutor().execute(()->{
                 if(connected()&&engine.allowed(this)){
-                    current.writePacketAndFlush(com.velocitypowered.proxy.protocol.packet.DialogClearPacket.INSTANCE);
+                    if(!nativeBedrock)current.writePacketAndFlush(com.velocitypowered.proxy.protocol.packet.DialogClearPacket.INSTANCE);
                     current.disconnect(proxy.getServer(config.s("routing.target-server")).orElseThrow());
                 }
             });
@@ -208,9 +247,10 @@ public final class ArtificalAuth {
         public void onChat(String text){
             if(!text.startsWith("/"))return;
             String[] args=text.substring(1).split("\\s+",2);
-            if(args[0].equalsIgnoreCase(config.s("commands.login")))submit(()->engine.refresh(this),this);
+            if(args[0].equalsIgnoreCase(config.s("commands.login")))refresh(this);
         }
         public void onGeneric(Object packet){
+            if(nativeBedrock)return;
             if(!(packet instanceof ServerboundCustomClickActionPacket click))return;
             long now=System.currentTimeMillis();if(now<nextPacket)return;nextPacket=now+300;
             try{
@@ -218,10 +258,10 @@ public final class ArtificalAuth {
                 if(reply==null)return;
                 submit(()->{
                     Engine.Session s=engine.session(this);
-                    if(s==null||!s.nonce.equalsIgnoreCase(reply.nonce()))return;
+                    if(s==null||!engine.acceptsReply(this,reply.nonce(),null))return;
                     switch(reply.action()){
                         case "password"->engine.password(this,s.nonce,reply.password());
-                        case "refresh"->engine.refresh(this);
+                        case "refresh"->refresh(this);
                         case "exit"->kick(config.s("messages.cancelled"));
                     }
                 },this);

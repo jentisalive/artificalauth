@@ -33,6 +33,11 @@ public final class Engine {
     public Engine(Config c,Store store,Bot bot,LongSupplier clock){this.c=c;this.store=store;this.bot=bot;this.clock=clock;}
     public boolean allowed(Client cl){Session s=sessions.get(cl.id());return s!=null && s.client==cl && s.allowed && cl.connected();}
     public Session session(Client cl){Session s=sessions.get(cl.id());return s!=null && s.client==cl?s:null;}
+    /** Shared Java/Bedrock callback guard; UI close/refresh never bypasses authentication. */
+    public boolean acceptsReply(Client cl,String nonce,String stage){
+        Session s=session(cl);
+        return s!=null&&!s.allowed&&valid(s)&&s.nonce.equalsIgnoreCase(nonce)&&(stage==null||stage.equals(s.stage));
+    }
     private long now(){return clock.getAsLong();}
     private Map<String,String> values(Session s){
         Map<String,String> v=new HashMap<>();v.put("player",s.client.name());v.put("ip",s.client.ip());

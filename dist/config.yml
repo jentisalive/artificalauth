@@ -1,4 +1,4 @@
-# ArtificalAuth 0.1.2-beta — 17.10.2026
+# ArtificalAuth 0.1.4-beta — 21.10.2026 | from 0.1.2-beta template
 # Только Velocity + LimboAPI. Paper-сервер авторизации не требуется.
 # Перед включением заполните token и username. Токен можно передать через ARTIFICAL_AUTH_BOT_TOKEN.
 # При enabled: false плагин ЗАКРЫВАЕТ вход, чтобы не допустить обход авторизации.
@@ -68,6 +68,16 @@ dialog:
   input-width: 240
   button-width: 220
 
+# added | ArtificalAuth 0.1.4-beta | 21.10.2026
+# Geyser должен работать на этом же Velocity. Без него Java-интерфейс не меняется.
+# Старые конфиги получают эти значения в памяти; токен и аккаунты не переписываются.
+bedrock:
+  # Выбор Java/Bedrock-интерфейса фиксируется при входе; смена enabled действует на новые подключения.
+  enabled: true
+  send-delay-ms: 500
+  retry-delay-ms: 500
+  max-send-attempts: 5
+
 # Minecraft: MiniMessage. Telegram: HTML.
 # Динамические значения Telegram экранируются, пароль можно копировать из блока <code>.
 # Политики «один Telegram — один активный аккаунт», «один сохранённый IP»,
@@ -122,6 +132,11 @@ messages:
   cancelled: "<gray>ArtificalSMP</gray>\n\n<white>Вход отменён.</white>"
   unsupported-version: "<gray>ArtificalSMP</gray>\n\n<white>Клиент не поддерживает окно авторизации.</white>\n<gray>Используй Minecraft Java 1.21.11.</gray>"
   invalid-response: "<gray>ArtificalSMP</gray>\n\n<white>Некорректный ответ на окно входа.</white>\n<gray>Подключись снова.</gray>"
+  # added | ArtificalAuth 0.1.4-beta | 21.10.2026
+  bedrock-password-warning: "<yellow>Bedrock может показывать вводимый пароль открытым текстом. Не демонстрируй экран при вводе.</yellow>"
+  bedrock-password-placeholder: "Пароль, который выдал Telegram-бот"
+  bedrock-form-closed: "<gray>Окно закрыто, но вход ещё не разрешён. Открой его командой <white>/{login-command}</white>.</gray>"
+  bedrock-form-unavailable: "<gray>ArtificalSMP</gray>\n\n<white>Не удалось открыть Bedrock-форму авторизации.</white>\n<gray>Подключись снова или обратись к администрации.</gray>"
   admin-usage: "<gray>Команды: {command} {unlock} <ник> / {command} {reload}</gray>"
   admin-reloaded: "<green>Конфиг ArtificalAuth перезагружен.</green>"
   admin-reload-failed: "<red>Конфиг не применён. Сохранены предыдущие настройки; проверь консоль.</red>"

@@ -33,6 +33,10 @@ public final class Config {
         range("security.auth-timeout-seconds",30,1800);
         range("security.session-hours",0,168);
         range("security.max-password-attempts",1,20);
+        range("bedrock.send-delay-ms",0,5000);
+        range("bedrock.retry-delay-ms",100,5000);
+        range("bedrock.max-send-attempts",1,10);
+        if(!(get("bedrock.enabled") instanceof Boolean))throw new IllegalArgumentException("Invalid bedrock.enabled");
         if (!s("security.password-alphabet").matches(".*[A-Za-z].*")
             || !s("security.password-alphabet").matches(".*[^A-Za-z0-9].*"))
             throw new IllegalArgumentException("Password alphabet must contain letters and symbols");

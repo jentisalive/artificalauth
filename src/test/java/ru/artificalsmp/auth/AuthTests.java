@@ -54,8 +54,12 @@ public final class AuthTests {
             Player p=f.player("Alice","1.2.3.4");String code=f.engine.session(p).code;
             check("register".equals(p.screen),"first connection displays registration");
             check(code.length()==10,"code length");
+            check(f.engine.acceptsReply(p,f.engine.session(p).nonce,"register"),"current Java/Bedrock view accepted");
+            check(!f.engine.acceptsReply(p,"stale-nonce","register"),"stale UI nonce rejected");
+            check(!f.engine.acceptsReply(p,f.engine.session(p).nonce,"password"),"wrong UI stage rejected");
             f.bind(p,100);String password=f.bot.password();
             check(p.joined,"successful Telegram bind opens backend");
+            check(!f.engine.acceptsReply(p,f.engine.session(p).nonce,"register"),"callbacks after authorization rejected");
             check(password.length()==8 && password.chars().anyMatch(Character::isLetter)&&password.chars().anyMatch(x->!Character.isLetterOrDigit(x)),"password alphabet");
             check(!Files.readString(f.dir.resolve("accounts.json")).contains(password),"plaintext password never persisted");
             check(Crypto.verify(password,f.store.get("Alice").hash),"password hash verifies");
@@ -98,6 +102,7 @@ public final class AuthTests {
         try(Fixture f=new Fixture(config)){
             Player p=f.player("Timeout","1.1.1.1");String code=f.engine.session(p).code;
             f.time.addAndGet(181000);f.engine.tick();check(!p.online,"authentication timeout");
+            check(!f.engine.acceptsReply(p,"anything","register"),"timed-out UI cannot respond");
             f.engine.message(200,code);check(f.store.get("Timeout")==null,"expired code rejected");
             Player delivery=f.player("Delivery","8.8.8.8");f.bot.fail=true;f.bind(delivery,300);
             check(!delivery.online&&!f.store.get("Delivery").delivered,"failed Telegram delivery fails closed");

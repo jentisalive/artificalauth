@@ -1,6 +1,6 @@
 # artificalauth
 
-**ArtificalAuth 0.1.3-beta** — авторизация ArtificalSMP через Telegram и нативные Java-диалоги, целиком на Velocity + LimboAPI. Отдельный Paper-плагин авторизации не требуется.
+**ArtificalAuth 0.1.4-beta** — авторизация ArtificalSMP через Telegram, нативные Java-диалоги и отдельные Bedrock-формы, целиком на Velocity + LimboAPI. Отдельный Paper-плагин авторизации не требуется.
 
 ## Возможности
 
@@ -13,18 +13,31 @@
 - Консольные команды перезагрузки настроек и освобождения заблокированного ника.
 - Закрытый вход при неготовности плагина; нет автоматического сброса повреждённой базы аккаунтов.
 
-Отдельный Bedrock-интерфейс обсуждается, но **в версии 0.1.3-beta ещё не реализован**.
+## Новое в 0.1.4-beta
+
+- Нативные Bedrock-формы регистрации, ожидания Telegram и ввода пароля через Geyser API на Velocity.
+- Повторное открытие через `/auth`, автоматическое закрытие после входа, защита от повторных и устаревших ответов.
+- Старые настройки и аккаунты не переписываются; новые значения по умолчанию объединяются в памяти.
+- Java-диалоги сохранены; без Geyser установка продолжает работать в Java-режиме.
+
+**Привязка Java/Bedrock-аккаунтов и общая игровая личность в этот релиз не входят.**
+
+Проверены 72 проверки логики/Java-диалогов, 55 проверок Cumulus-форм и интеграционный Java-сценарий с Geyser/Floodgate и без них. Транспорт форм в unit-тестах имитируется: доставку и визуальное поведение на реальном Bedrock-клиенте ещё нужно проверить. Стандартное Bedrock-поле может показывать пароль открытым текстом.
+
+Подробнее: [изменения для игроков](CHANGELOG-0.1.4.md), [технические подробности и ограничения](FIX-0.1.4.md).
 
 ## Готовый плагин
 
-Актуальный jar: [`dist/ArtificalAuth-0.1.3-beta.jar`](dist/ArtificalAuth-0.1.3-beta.jar).
+Актуальный jar: [`dist/ArtificalAuth-0.1.4-beta.jar`](dist/ArtificalAuth-0.1.4-beta.jar).
+
+Релиз: [v0.1.4-beta](https://github.com/jentisalive/artificalauth/releases/tag/v0.1.4-beta).
 
 SHA256:
 ```text
-4D46CE9328B3FCE0F0A258DA6624081B6D8F3B5A11D036A63F7B0522BACBE991
+02D0793D8EB6D18E9CE99653B774D443B07075608F43275785B82564FF3E8CEB
 ```
 
-Это исходный артефакт из локальной папки проекта; его хеш совпадает с установленным в ArtificalSMP jar. Старые версии сохранены в `dist/` и архивных снимках.
+Это собранный артефакт из локальной папки проекта. Старые версии сохранены в `dist/` и архивных снимках; публикация новой версии сама по себе не обновляет рабочий сервер.
 
 ## Установка
 
@@ -34,6 +47,10 @@ SHA256:
 4. Настроить `bot.username`, токен и `routing.target-server`, затем включить `enabled: true`.
 5. Токен рекомендуется передавать через переменную окружения `ARTIFICAL_AUTH_BOT_TOKEN`, а не хранить в публикуемом конфиге.
 6. Проверить регистрацию, подтверждение Telegram и вход по паролю на тестовом сервере.
+
+Для нативных Bedrock-форм установите **Geyser-Velocity на тот же прокси**, настройте Floodgate при его использовании и оставьте `bedrock.enabled: true`. В этой версии проверялись API установленных Geyser 2.12.0-b1258 и Floodgate 2.2.5-SNAPSHOT. Смена `bedrock.enabled` применяется к новым подключениям.
+
+При обновлении не заменяйте рабочий конфиг шаблоном: новые значения подставляются в памяти. `install-0.1.4.ps1` без аргументов показывает план; `-Apply` заменяет jar с резервной копией при остановленном сервере. Конфиг и аккаунты установщик не переписывает.
 
 Пока настройки не заполнены, плагин намеренно закрывает вход. Backend должен быть недоступен в обход прокси, а modern forwarding — настроен независимо от плагина.
 
@@ -49,7 +66,7 @@ authadmin unlock <ник>   — освободить заблокированн�
 
 ## Сборка и тесты
 
-`build.ps1` компилирует Java-код с `--release 21`, упаковывает SnakeYAML и запускает `AuthTests`. Нужен JDK с `javac` и API jar совместимого Velocity, LimboAPI и SnakeYAML.
+`build.ps1` компилирует Java-код с `--release 21`, упаковывает SnakeYAML и запускает `AuthTests` и `BedrockFormsTests`. Нужен JDK с `javac` и API jar совместимого Velocity, LimboAPI, SnakeYAML, Geyser и Floodgate. Geyser/Floodgate используются для компиляции и не встраиваются в плагин.
 
 Пример с явными путями:
 
@@ -57,12 +74,16 @@ authadmin unlock <ник>   — освободить заблокированн�
 powershell -ExecutionPolicy Bypass -File .\build.ps1 `
   -JavaHome "C:\Java\jdk-25" `
   -VelocityJar "C:\Minecraft\Velocity\server.jar" `
-  -SnakeYamlJar "C:\Minecraft\Main\libraries\org\yaml\snakeyaml\2.2\snakeyaml-2.2.jar"
+  -SnakeYamlJar "C:\Minecraft\Main\libraries\org\yaml\snakeyaml\2.2\snakeyaml-2.2.jar" `
+  -GeyserJar "C:\Minecraft\Velocity\plugins\Geyser-Velocity.jar" `
+  -FloodgateJar "C:\Minecraft\Velocity\plugins\floodgate-velocity.jar"
 ```
 
-Путь к `lib/limboapi.jar` определяется относительно проекта. Результат — `dist/ArtificalAuth-0.1.3-beta.jar`.
+Путь к `lib/limboapi.jar` определяется относительно проекта. Результат — `dist/ArtificalAuth-0.1.4-beta.jar`.
 
 `integration/run.py` содержит интеграционный тест с локальным Telegram API и клиентом протокола 774. Он написан для исходного стенда ArtificalSMP: пути, стартовый шаблон Velocity и тестовый сервер необходимо подготовить отдельно. Папка работающего тестового сервера в Git не включена.
+
+Флаг `--with-geyser` проверяет Java-путь при установленных Geyser/Floodgate. `integration/test-install.ps1` проверяет установку в отдельный каталог с фиктивными данными.
 
 Исторические `install-0.1.2.ps1` / `install-0.1.3.ps1` также используют исходные абсолютные пути. Не запускать их на другом сервере без проверки.
 
