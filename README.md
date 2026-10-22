@@ -105,4 +105,4 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 `
 
 В репозиторий не включены Telegram-токены, базы аккаунтов, forwarding secrets, рабочие конфиги из установочных бэкапов, журналы, IDE-файлы, результаты компиляции и полные тестовые серверы. Содержимое `src/main/resources/config.yml` и `dist/config.yml` — шаблоны, не боевые настройки.
 
-**AI SLOP.**
+## AI SLOP.
